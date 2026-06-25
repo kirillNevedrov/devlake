@@ -38,8 +38,8 @@ earlier stages.
 
 | ID | Name | Status | Details | Depends on |
 | --- | --- | --- | --- | --- |
-| T4 | ClickUp API client, paginator & error/rate-limit hooks | TODO | [T4.md](./tasks/T4.md) | T2 |
-| T5 | Tool-table migration | TODO | [T5.md](./tasks/T5.md) | T2 |
+| T4 | ClickUp API client, paginator & error/rate-limit hooks | DONE | [T4.md](./tasks/T4.md) | T2 |
+| T5 | Tool-table migration | DONE | [T5.md](./tasks/T5.md) | T2 |
 
 ### Stage 3 — Collection & conversion
 

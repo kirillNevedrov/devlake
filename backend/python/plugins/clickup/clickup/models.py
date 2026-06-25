@@ -23,6 +23,9 @@ from sqlalchemy import Column, JSON
 from pydevlake import ScopeConfig, Field
 from pydevlake.model import ToolScope, ToolModel, Connection
 
+# needed to be able to run migrations
+from clickup.migrations import *
+
 
 class ClickUpConnection(Connection):
     token: SecretStr                            # personal API token
