@@ -30,9 +30,9 @@ earlier stages.
 
 | ID | Name | Status | Details | Depends on |
 | --- | --- | --- | --- | --- |
-| T1 | Shared `ticket` domain layer module in pydevlake | TODO | [T1.md](./tasks/T1.md) | — |
-| T2 | ClickUp plugin scaffold + tool/config models | TODO | [T2.md](./tasks/T2.md) | — |
-| T3 | Config-UI plugin registration | TODO | [T3.md](./tasks/T3.md) | — |
+| T1 | Shared `ticket` domain layer module in pydevlake | DONE | [T1.md](./tasks/T1.md) | — |
+| T2 | ClickUp plugin scaffold + tool/config models | DONE | [T2.md](./tasks/T2.md) | — |
+| T3 | Config-UI plugin registration | DONE | [T3.md](./tasks/T3.md) | — |
 
 ### Stage 2 — API client & schema (parallel)
 
