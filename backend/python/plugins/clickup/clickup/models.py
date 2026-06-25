@@ -27,10 +27,26 @@ from pydevlake.model import ToolScope, ToolModel, Connection
 from clickup.migrations import *
 
 
+DEFAULT_ENDPOINT = "https://api.clickup.com/api/v2"
+
+
 class ClickUpConnection(Connection):
     token: SecretStr                            # personal API token
-    endpoint: Optional[str] = "https://api.clickup.com/api/v2"
+    endpoint: Optional[str] = DEFAULT_ENDPOINT
     rate_limit_per_hour: Optional[int] = 6000   # ~100/min default
+
+    @validator('endpoint', pre=True, always=True)
+    def default_endpoint(cls, value):
+        """
+        The config UI only carries `endpoint` as an initial value, not an editable
+        field, so the connection is often persisted with an empty/missing endpoint.
+        Pydantic's field default only fills absent/None keys, so an empty string
+        would slip through and make `ClickUpAPI.base_url` empty, producing the bare
+        request URL 'team' (MissingSchema). Coerce empty/missing back to the default.
+        """
+        if value is None or value == "":
+            return DEFAULT_ENDPOINT
+        return value
 
 
 class ClickUpScopeConfig(ScopeConfig):
