@@ -51,7 +51,7 @@ earlier stages.
 
 | ID | Name | Status | Details | Depends on |
 | --- | --- | --- | --- | --- |
-| T7 | `ClickUpPlugin` wiring: connection test, remote scopes, board scopes | TODO | [T7.md](./tasks/T7.md) | T1, T2, T4, T6 |
+| T7 | `ClickUpPlugin` wiring: connection test, remote scopes, board scopes | DONE | [T7.md](./tasks/T7.md) | T1, T2, T4, T6 |
 
 ## Out of scope (documented, not implemented as tasks)
 
