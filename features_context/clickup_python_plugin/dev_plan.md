@@ -45,7 +45,7 @@ earlier stages.
 
 | ID | Name | Status | Details | Depends on |
 | --- | --- | --- | --- | --- |
-| T6 | `ClickupTasks` stream (collect / extract / convert) | TODO | [T6.md](./tasks/T6.md) | T1, T2, T4 |
+| T6 | `ClickupTasks` stream (collect / extract / convert) | DONE | [T6.md](./tasks/T6.md) | T1, T2, T4 |
 
 ### Stage 4 — Plugin assembly
 

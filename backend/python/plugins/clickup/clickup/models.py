@@ -39,6 +39,19 @@ class ClickUpScopeConfig(ScopeConfig):
     issue_type_bug: Optional[re.Pattern]
     issue_type_requirement: Optional[re.Pattern]
 
+    @validator('issue_type_incident', 'issue_type_bug', 'issue_type_requirement', pre=True)
+    def compile_case_insensitive(cls, value):
+        """
+        Compile the classification patterns with re.IGNORECASE so tag matching is
+        case-insensitive (REQ-4.2, tech design §1.3). Empty/missing patterns stay
+        None, which makes the corresponding type effectively unconfigured.
+        """
+        if value is None or value == "":
+            return None
+        if isinstance(value, re.Pattern):
+            value = value.pattern
+        return re.compile(value, re.IGNORECASE)
+
 
 class ClickUpFolder(ToolScope, table=True):
     # ToolScope provides: id (pk), name, scope_config_id, connection_id (pk)
