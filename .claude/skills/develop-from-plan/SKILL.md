@@ -42,7 +42,5 @@ allowed-tools: Read, Write, Bash
 
 ### Testing
 
-- Use `/write-be-tests` skill to obtain rules to follow while writing automated backend tests.
-- Use `/run-be-tests` skill to run automated backend tests to verify correctness of the implemented feature.
 - Run tests in a separate subagent after each stage is completed, so all tests for the stage run at once.
 - If any tests fail, run an extra fix stage before proceeding to the next stage.
