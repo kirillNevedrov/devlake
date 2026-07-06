@@ -66,6 +66,11 @@ class ClickUpAPI(API):
     def lists(self, folder_id: str):
         return self.get('folder', folder_id, 'list')
 
+    def custom_items(self, team_id: str):
+        # Custom task types for the workspace (team). No `tasks` key in the body,
+        # so the paginator treats it as a single unpaginated response.
+        return self.get('team', team_id, 'custom_item')
+
     def tasks(self, list_id: str, page: int = 0, date_updated_gt: Optional[int] = None):
         query_args = {
             'order_by': 'updated',

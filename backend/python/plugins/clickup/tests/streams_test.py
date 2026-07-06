@@ -68,6 +68,7 @@ def sample_task_json(**overrides):
     raw = {
         "id": "abc123",
         "custom_id": "GH-7",
+        "custom_item_id": None,
         "name": "Login is broken",
         "text_content": "details",
         "description": "Users cannot log in",
@@ -89,8 +90,10 @@ def sample_task_json(**overrides):
     return raw
 
 
-def convert(raw, ctx):
+def convert(raw, ctx, custom_item_types=None):
     stream = ClickupTasks('clickup')
+    # Pre-seed the per-team custom-item-type cache so convert() does not hit the API.
+    stream._custom_item_types = {ctx.scope.team_id: custom_item_types or {}}
     task = stream.extract(raw)
     task.connection_id = ctx.connection.id
     return list(stream.convert(task, ctx))
@@ -112,6 +115,7 @@ def test_extract_builds_tool_model_from_clickup_json():
 
     assert task.id == "abc123"
     assert task.custom_id == "GH-7"
+    assert task.custom_item_id is None
     assert task.status == "in progress"
     assert task.status_type == "custom"
     assert task.creator_id == "42"
@@ -130,36 +134,64 @@ def test_extract_builds_tool_model_from_clickup_json():
 def test_classification_precedence_incident_wins():
     config = make_context(**default_patterns()).scope_config
     tags = [{"name": "bug"}, {"name": "incident"}, {"name": "feature"}]
-    assert classify_type(tags, config) == ticket.INCIDENT
+    assert classify_type(tags, None, config) == ticket.INCIDENT
 
 
 def test_classification_bug_beats_requirement():
     config = make_context(**default_patterns()).scope_config
     tags = [{"name": "feature"}, {"name": "bug"}]
-    assert classify_type(tags, config) == ticket.BUG
+    assert classify_type(tags, None, config) == ticket.BUG
 
 
 def test_classification_requirement_match():
     config = make_context(**default_patterns()).scope_config
-    assert classify_type([{"name": "feature"}], config) == ticket.REQUIREMENT
+    assert classify_type([{"name": "feature"}], None, config) == ticket.REQUIREMENT
 
 
 def test_classification_is_case_insensitive():
     config = make_context(**default_patterns()).scope_config
-    assert classify_type([{"name": "INCIDENT"}], config) == ticket.INCIDENT
-    assert classify_type([{"name": "Bug"}], config) == ticket.BUG
+    assert classify_type([{"name": "INCIDENT"}], None, config) == ticket.INCIDENT
+    assert classify_type([{"name": "Bug"}], None, config) == ticket.BUG
 
 
 def test_classification_no_match_defaults_to_requirement():
     config = make_context(**default_patterns()).scope_config
-    assert classify_type([{"name": "chore"}], config) == ticket.REQUIREMENT
+    assert classify_type([{"name": "chore"}], None, config) == ticket.REQUIREMENT
 
 
 def test_classification_empty_patterns_default_to_requirement():
     # No patterns configured -> all tasks REQUIREMENT, no incidents (REQ-4 alt-4a).
     config = make_context().scope_config
-    assert classify_type([{"name": "incident"}], config) == ticket.REQUIREMENT
+    assert classify_type([{"name": "incident"}], None, config) == ticket.REQUIREMENT
     assert config.issue_type_incident is None
+
+
+# --- type classification from custom task type -------------------------------
+
+def test_classification_from_custom_type_name_alone():
+    # No tag matches, but the custom task type name does.
+    config = make_context(**default_patterns()).scope_config
+    assert classify_type([{"name": "chore"}], "Incident", config) == ticket.INCIDENT
+    assert classify_type([], "bug", config) == ticket.BUG
+    assert classify_type([], "Feature request", config) == ticket.REQUIREMENT
+
+
+def test_classification_tag_beats_custom_type_by_precedence():
+    # Unified precedence: a tag matching INCIDENT wins over a custom type matching BUG.
+    config = make_context(**default_patterns()).scope_config
+    assert classify_type([{"name": "incident"}], "bug", config) == ticket.INCIDENT
+
+
+def test_classification_custom_type_beats_lower_precedence_tag():
+    # A custom type matching BUG wins over a tag matching only REQUIREMENT.
+    config = make_context(**default_patterns()).scope_config
+    assert classify_type([{"name": "feature"}], "bug", config) == ticket.BUG
+
+
+def test_classification_none_custom_type_is_tags_only():
+    config = make_context(**default_patterns()).scope_config
+    assert classify_type([{"name": "incident"}], None, config) == ticket.INCIDENT
+    assert classify_type([{"name": "chore"}], None, config) == ticket.REQUIREMENT
 
 
 # --- status mapping (REQ-3.3) ------------------------------------------------
@@ -251,6 +283,16 @@ def test_convert_non_incident_yields_no_incident():
     assert first(results, ticket.Issue).type == ticket.REQUIREMENT
     assert all_of(results, ticket.Incident) == []
     assert all_of(results, ticket.IncidentAssignee) == []
+
+
+def test_convert_classifies_from_custom_task_type():
+    # Tag does not match any pattern, but custom type 1300 -> "Incident" does.
+    ctx = make_context(**default_patterns())
+    raw = sample_task_json(custom_item_id=1300, tags=[{"name": "chore"}])
+    results = convert(raw, ctx, custom_item_types={1300: "Incident"})
+
+    assert first(results, ticket.Issue).type == ticket.INCIDENT
+    assert all_of(results, ticket.Incident) != []
 
 
 def test_convert_issue_key_falls_back_to_task_id():

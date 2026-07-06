@@ -79,6 +79,7 @@ class ClickUpFolder(ToolScope, table=True):
 class ClickUpTask(ToolModel, table=True):
     id: str = Field(primary_key=True)
     custom_id: Optional[str]
+    custom_item_id: Optional[int]    # ClickUp custom task type id; null/absent = default "Task"
     name: str
     text_content: Optional[str]
     description: Optional[str]

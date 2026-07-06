@@ -100,6 +100,17 @@ def test_paginator_stops_when_last_page_flag_missing():
     assert paginator.get_next_page_id(response) is None
 
 
+def test_custom_items_builds_team_custom_item_path():
+    api = ClickUpAPI(make_connection())
+    captured = {}
+    api.get = lambda *path, **query: captured.update(path=path, query=query)
+
+    api.custom_items("t1")
+
+    assert captured["path"] == ("team", "t1", "custom_item")
+    assert captured["query"] == {}
+
+
 def test_paginator_sets_next_page_param():
     paginator = ClickUpPaginator()
     request = Request("https://api.clickup.com/api/v2/list/1/task", query_args={"page": 0})

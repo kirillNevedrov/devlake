@@ -80,13 +80,38 @@ class ClickupTasks(Stream):
             return None
         return int(last_updated) - ONE_DAY_MS
 
+    def custom_item_types(self, ctx: Context) -> dict:
+        """
+        Map of ClickUp `custom_item_id` -> custom task type name for the scope's
+        team, fetched once per run and memoized on the stream instance (the same
+        instance handles every convert call in a subtask run). Failures fall back
+        to an empty map so classification degrades to tag-only.
+        """
+        team_id = ctx.scope.team_id
+        if not hasattr(self, '_custom_item_types'):
+            self._custom_item_types = {}
+        if team_id not in self._custom_item_types:
+            api = ClickUpAPI(ctx.connection)
+            try:
+                items = api.custom_items(team_id).json.get('custom_items', [])
+            except Exception as e:
+                logger.warning(
+                    f'ClickUp: could not load custom task types for team {team_id}: {e}'
+                )
+                items = []
+            self._custom_item_types[team_id] = {
+                item['id']: item.get('name', '') for item in items
+            }
+        return self._custom_item_types[team_id]
+
     def convert(self, task: ClickUpTask, ctx: Context) -> Iterable[object]:
         config: ClickUpScopeConfig = ctx.scope_config
 
         board_id = ctx.scope.domain_id()
         issue_id = task.domain_id()
 
-        issue_type = classify_type(task.tags, config)
+        custom_type_name = self.custom_item_types(ctx).get(task.custom_item_id)
+        issue_type = classify_type(task.tags, custom_type_name, config)
         status, original_status = map_status(task.status_type, task.status)
         resolution_date = task.date_done or task.date_closed
         lead_time_minutes = compute_lead_time_minutes(task.date_created, task.date_done)
@@ -160,21 +185,26 @@ class ClickupTasks(Stream):
             )
 
 
-def classify_type(tags: list[dict], config: ClickUpScopeConfig) -> str:
+def classify_type(tags: list[dict], custom_type_name: Optional[str], config: ClickUpScopeConfig) -> str:
     """
-    Classify a task into an issue type by matching its tag names against the
-    INCIDENT/BUG/REQUIREMENT patterns from the scope config. Precedence is fixed
-    (INCIDENT > BUG > REQUIREMENT) and the default — including when no pattern is
-    configured — is REQUIREMENT (REQ-4). Matching is case-insensitive: the
-    patterns are compiled with re.IGNORECASE by the scope config model.
+    Classify a task into an issue type by matching its tag names AND its ClickUp
+    custom task type name against the INCIDENT/BUG/REQUIREMENT patterns from the
+    scope config. A type is assigned if any tag or the custom type name matches.
+    Precedence is fixed (INCIDENT > BUG > REQUIREMENT) and unified across both
+    sources — a tag matching INCIDENT beats a custom type matching BUG. The
+    default — including when no pattern is configured — is REQUIREMENT (REQ-4).
+    Matching is case-insensitive: the patterns are compiled with re.IGNORECASE
+    by the scope config model.
     """
-    tag_names = [tag.get('name', '') for tag in (tags or [])]
+    candidates = [tag.get('name', '') for tag in (tags or [])]
+    if custom_type_name:
+        candidates.append(custom_type_name)
     for pattern, issue_type in (
         (config.issue_type_incident, ticket.INCIDENT),
         (config.issue_type_bug, ticket.BUG),
         (config.issue_type_requirement, ticket.REQUIREMENT),
     ):
-        if pattern is not None and any(pattern.search(name) for name in tag_names):
+        if pattern is not None and any(pattern.search(c) for c in candidates):
             return issue_type
     return ticket.REQUIREMENT
 

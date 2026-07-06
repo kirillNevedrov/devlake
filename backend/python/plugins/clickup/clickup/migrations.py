@@ -52,6 +52,7 @@ def init_schemas(b: MigrationScriptBuilder):
     class ClickUpTask(ToolModel):
         id: str = Field(primary_key=True)
         custom_id: Optional[str]
+        custom_item_id: Optional[int]
         name: str
         text_content: Optional[str]
         description: Optional[str]

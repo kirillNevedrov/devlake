@@ -58,6 +58,7 @@ def test_extract_resolves_source_pointers_and_dates():
     raw = {
         "id": "abc123",
         "custom_id": "GH-7",
+        "custom_item_id": 1300,
         "name": "Login is broken",
         "text_content": "details",
         "status": {"status": "in progress", "type": "custom"},
@@ -77,6 +78,7 @@ def test_extract_resolves_source_pointers_and_dates():
 
     assert task.id == "abc123"
     assert task.custom_id == "GH-7"
+    assert task.custom_item_id == 1300
     assert task.status == "in progress"
     assert task.status_type == "custom"
     assert task.creator_id == "42"
