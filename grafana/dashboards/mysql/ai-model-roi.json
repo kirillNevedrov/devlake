@@ -531,7 +531,7 @@
   },
   "timepicker": {},
   "timezone": "utc",
-  "title": "AI Cost-Efficiency (PostgreSQL)",
-  "uid": "ai_cost_efficiency-pg",
+  "title": "AI Model ROI",
+  "uid": "ai_model_roi",
   "version": 1
 }
